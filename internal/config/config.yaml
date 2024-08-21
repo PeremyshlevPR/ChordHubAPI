@@ -1,0 +1,6 @@
+env: "local"
+db: 
+  path: "../../data/chords_app.db"
+server:
+  host: "0.0.0.0"
+  port: 8080
