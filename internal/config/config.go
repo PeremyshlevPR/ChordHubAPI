@@ -8,9 +8,11 @@ import (
 )
 
 type Config struct {
-	Env    string `yaml:"env"`
-	Server Server `yaml:"server"`
-	DB     `yaml:"db"`
+	Env       string `yaml:"env"`
+	Server    Server `yaml:"server"`
+	DB        `yaml:"db"`
+	JWTConfig `yaml:"jwt"`
+	Roles     `yaml:"roles"`
 }
 
 type Server struct {
@@ -20,6 +22,19 @@ type Server struct {
 
 type DB struct {
 	Path string `yaml:"path"`
+}
+
+type JWTConfig struct {
+	AccessTokenExpTimeMin uint   `yaml:"access_token_exp_time_min"`
+	AccessTokenSecretKey  string `yaml:"access_token_secret_key"`
+
+	RefreshTokenExpTimeDays uint   `yaml:"refresh_token_exp_time_days"`
+	RefreshTokenSecretKey   string `yaml:"refresh_token_secret_key"`
+}
+
+type Roles struct {
+	Admin string `yaml:"admin"`
+	User  string `yaml:"user"`
 }
 
 func SetupConfig() (*Config, error) {

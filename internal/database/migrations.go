@@ -1,11 +1,13 @@
 package database
 
 import (
+	"chords_app/internal/models"
+
 	"gorm.io/gorm"
 )
 
 func AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(
-		&User{}, &Song{}, &Artist{}, &SongArtist{},
+		&models.User{}, &models.Song{}, &models.Artist{}, &models.SongArtist{},
 	)
 }
