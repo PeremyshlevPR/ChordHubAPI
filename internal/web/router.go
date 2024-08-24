@@ -27,11 +27,13 @@ func SetupRouter(
 	apiRouter.GET("/artists/:id", artistHandler.GetArtistInformation)
 
 	authRequieredRouter := apiRouter.Group("/", middleware.AuthMiddleware(userService))
+	authRequieredRouter.GET("/users/me", userHandler.GetUserInfo)
 
 	adminOnlyRouter := authRequieredRouter.Group("/", middleware.VerifyRoleMiddleware(userService, rolesConfig.Admin))
 	adminOnlyRouter.POST("/artists", artistHandler.CreateArtist)
 	adminOnlyRouter.PUT("/artists/:id", artistHandler.UpdateArtist)
 	adminOnlyRouter.DELETE("/artists/:id", artistHandler.DeleteArtist)
+	adminOnlyRouter.POST("/users/create", userHandler.CreateNewUser)
 
 	return r
 }

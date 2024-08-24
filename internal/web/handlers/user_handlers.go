@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"chords_app/internal/config"
+	"chords_app/internal/models"
 	"chords_app/internal/services"
 	"net/http"
 
@@ -30,13 +31,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		Password string `json:"password" validate:"required,min=6"`
 	}
 
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.validate.Struct(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !ValidateRequest(c, &req, h.validate) {
 		return
 	}
 
@@ -73,13 +68,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		Password string `json:"password" validate:"required,min=6"`
 	}
 
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.validate.Struct(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !ValidateRequest(c, &req, h.validate) {
 		return
 	}
 
@@ -115,13 +104,7 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 		RefreshToken string `json:"refreshToken" validate:"required"`
 	}
 
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	if err := h.validate.Struct(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if !ValidateRequest(c, &req, h.validate) {
 		return
 	}
 
@@ -134,5 +117,45 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"accessToken":  newAccessToken,
 		"refreshToken": newRefreshToken,
+	})
+}
+
+func (h *UserHandler) CreateNewUser(c *gin.Context) {
+	var req struct {
+		Name     string `json:"name" validate:"required,min=2"`
+		Email    string `json:"email" validate:"required,email"`
+		Role     string `json:"role" validate:"required"`
+		Password string `json:"password" validate:"required,min=6"`
+	}
+
+	if !ValidateRequest(c, &req, h.validate) {
+		return
+	}
+
+	user, err := h.service.Register(req.Name, req.Email, req.Password, req.Role)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"userId": user.ID,
+		"role":   user.Role,
+		"email":  user.Email,
+	})
+}
+
+func (h *UserHandler) GetUserInfo(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Token is not provided"})
+		return
+	}
+
+	userModel := user.(*models.User)
+	c.JSON(http.StatusOK, gin.H{
+		"userId": userModel.ID,
+		"role":   userModel.Role,
+		"email":  userModel.Email,
 	})
 }
