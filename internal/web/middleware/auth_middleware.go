@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"chords_app/internal/config"
-	"chords_app/internal/utils"
+	"chords_app/internal/models"
+	"chords_app/internal/services"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -10,15 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type authMiddleware struct {
-	jwtConfig *config.JWTConfig
-}
-
-func NewMiddleware(jwtconfig *config.JWTConfig) *authMiddleware {
-	return &authMiddleware{jwtconfig}
-}
-
-func (a *authMiddleware) getCurrentUserID() gin.HandlerFunc {
+func AuthMiddleware(s services.UserService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientToken := c.GetHeader("Authorization")
 		if clientToken == "" {
@@ -39,16 +31,40 @@ func (a *authMiddleware) getCurrentUserID() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := utils.ValidateToken(clientToken, []byte(a.jwtConfig.AccessTokenSecretKey))
-
+		user, err := s.GetUserFromAccessToken(clientToken)
 		if err != nil {
-			slog.Error("Invalid Token Signature")
-			c.JSON(http.StatusUnauthorized, gin.H{"status": http.StatusUnauthorized, "message": "Invalid of Expired Auth Token"})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": err.Error(),
+			})
 			c.Abort()
 			return
 		}
 
-		c.Set("userId", claims.UserID)
+		c.Set("user", user)
+		c.Next()
+	}
+}
+
+func VerifyRoleMiddleware(s services.UserService, role string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, exists := c.Get("user")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "user not found",
+			})
+			c.Abort()
+			return
+		}
+		userModel := user.(*models.User)
+
+		if userModel.Role != role {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "insufficient permissions",
+			})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

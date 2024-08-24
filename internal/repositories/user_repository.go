@@ -9,6 +9,7 @@ import (
 
 type UserRepository interface {
 	FindByEmail(email string) (*models.User, error)
+	FindById(id uint) (*models.User, error)
 	Create(user *models.User) error
 }
 
@@ -23,6 +24,17 @@ func NewGormUserRepository(db *gorm.DB) UserRepository {
 func (r *gormUserRepository) FindByEmail(email string) (*models.User, error) {
 	var user models.User
 	result := r.db.Where("email = ?", email).First(&user)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
+	return &user, result.Error
+}
+
+func (r *gormUserRepository) FindById(id uint) (*models.User, error) {
+	var user models.User
+	result := r.db.Where("id = ?", id).First(&user)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, nil

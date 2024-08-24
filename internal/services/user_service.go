@@ -17,6 +17,7 @@ type UserService interface {
 	IssueAccessToken(userId uint, role, email string) (string, error)
 	IssueRefreshToken(userId uint, role, email string) (string, error)
 	Refresh(refreshToken string) (string, string, error)
+	GetUserFromAccessToken(accessToken string) (*models.User, error)
 }
 
 type userService struct {
@@ -94,4 +95,21 @@ func (s *userService) Refresh(refreshToken string) (string, string, error) {
 
 	accessToken, err := s.IssueAccessToken(user.ID, user.Role, user.Email)
 	return accessToken, refreshToken, err
+}
+
+func (s *userService) GetUserFromAccessToken(accessToken string) (*models.User, error) {
+	claims, err := utils.ValidateToken(accessToken, []byte(s.jwtConfig.AccessTokenSecretKey))
+	if err != nil {
+		return nil, errors.New("invalid or expired access token")
+	}
+
+	userId := claims.UserID
+	user, err := s.repo.FindById(userId)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+	return user, nil
 }
