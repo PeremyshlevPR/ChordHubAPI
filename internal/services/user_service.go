@@ -14,8 +14,8 @@ import (
 type UserService interface {
 	Register(name, email, password, role string) (*models.User, error)
 	Authenticate(email, password string) (*models.User, error)
-	IssueAccessToken(userId uint, role string) (string, error)
-	IssueRefreshToken(userId uint, role string) (string, error)
+	IssueAccessToken(userId uint, role, email string) (string, error)
+	IssueRefreshToken(userId uint, role, email string) (string, error)
 	Refresh(refreshToken string) (string, string, error)
 }
 
@@ -71,18 +71,18 @@ func (s *userService) Authenticate(email, password string) (*models.User, error)
 	return user, nil
 }
 
-func (s *userService) IssueAccessToken(userId uint, role string) (string, error) {
+func (s *userService) IssueAccessToken(userId uint, role, email string) (string, error) {
 	accessTokenDuration := time.Duration(s.jwtConfig.AccessTokenExpTimeMin) * time.Minute
-	return utils.IssueToken(userId, role, s.jwtConfig.AccessTokenSecretKey, accessTokenDuration)
+	return utils.IssueToken(userId, email, role, []byte(s.jwtConfig.AccessTokenSecretKey), accessTokenDuration)
 }
 
-func (s *userService) IssueRefreshToken(userId uint, role string) (string, error) {
+func (s *userService) IssueRefreshToken(userId uint, role, email string) (string, error) {
 	refreshTokenDuration := time.Duration(s.jwtConfig.RefreshTokenExpTimeDays) * (24 * time.Hour)
-	return utils.IssueToken(userId, role, s.jwtConfig.RefreshTokenSecretKey, refreshTokenDuration)
+	return utils.IssueToken(userId, email, role, []byte(s.jwtConfig.RefreshTokenSecretKey), refreshTokenDuration)
 }
 
 func (s *userService) Refresh(refreshToken string) (string, string, error) {
-	claims, err := utils.ValidateToken(refreshToken, s.jwtConfig.RefreshTokenSecretKey)
+	claims, err := utils.ValidateToken(refreshToken, []byte(s.jwtConfig.RefreshTokenSecretKey))
 	if err != nil {
 		return "", "", errors.New("invalid or expired refresh token")
 	}
@@ -92,6 +92,6 @@ func (s *userService) Refresh(refreshToken string) (string, string, error) {
 		return "", "", errors.New("user not found")
 	}
 
-	accessToken, err := s.IssueAccessToken(user.ID, user.Role)
-	return accessToken, refreshToken, nil
+	accessToken, err := s.IssueAccessToken(user.ID, user.Role, user.Email)
+	return accessToken, refreshToken, err
 }

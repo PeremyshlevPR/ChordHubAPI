@@ -13,10 +13,11 @@ type Claims struct {
 	*jwt.StandardClaims
 }
 
-func IssueToken(userId uint, role, secretKey string, expTimeDuration time.Duration) (string, error) {
+func IssueToken(userId uint, email, role string, secretKey []byte, expTimeDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(expTimeDuration)
 	claims := &Claims{
 		userId,
+		email,
 		role,
 		&jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
@@ -26,13 +27,13 @@ func IssueToken(userId uint, role, secretKey string, expTimeDuration time.Durati
 	return token.SignedString(secretKey)
 }
 
-func ValidateToken(tokenString string, secretKey string) (Claims, error) {
-	claims := Claims{}
+func ValidateToken(tokenString string, secretKey []byte) (Claims, error) {
+	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 	if err != nil || !token.Valid {
-		return claims, err
+		return *claims, err
 	}
-	return claims, nil
+	return *claims, nil
 }
