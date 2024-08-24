@@ -59,7 +59,6 @@ func TestGetArtists(t *testing.T) {
 	db.Create(&artist1)
 	db.Create(&artist2)
 
-	// Test case: Retrieve all artists
 	artists, err := repo.GetArtists()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -78,11 +77,9 @@ func TestGetArtistById(t *testing.T) {
 
 	repo := NewGormArtistRepository(db)
 
-	// Create test data
 	artist := models.Artist{Name: "Artist By ID"}
 	db.Create(&artist)
 
-	// Test case: Retrieve artist by ID
 	retrievedArtist, err := repo.GetArtistById(artist.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -100,7 +97,6 @@ func TestGetArtistById_NotFound(t *testing.T) {
 
 	repo := NewGormArtistRepository(db)
 
-	// Test case: Retrieve artist by non-existent ID
 	retrievedArtist, err := repo.GetArtistById(999)
 	assert.Nil(t, retrievedArtist, "expected no artist to be found")
 	assert.NoError(t, err, "expected no error")
@@ -114,7 +110,6 @@ func TestGetArtistSongs_WithSongs(t *testing.T) {
 
 	repo := NewGormArtistRepository(db)
 
-	// Create test data
 	artist := models.Artist{Name: "Test Artist"}
 	song1 := models.Song{Title: "Song 1", Description: "Description 1", Content: "Content 1"}
 	song2 := models.Song{Title: "Song 2", Description: "Description 2", Content: "Content 2"}
@@ -129,15 +124,14 @@ func TestGetArtistSongs_WithSongs(t *testing.T) {
 	db.Create(&songArtist1)
 	db.Create(&songArtist2)
 
-	// Test case: Artist has songs
 	songs, err := repo.GetArtistSongs(artist.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	assert.Len(t, songs, 2, "expected 2 songs")
-	assert.Equal(t, "Song 1", songs[0].Title, "expected first song to be Song 1")
-	assert.Equal(t, "Song 2", songs[1].Title, "expected second song to be Song 2")
+	assert.Len(t, *songs, 2, "expected 2 songs")
+	assert.Equal(t, "Song 1", (*songs)[0].Title, "expected first song to be Song 1")
+	assert.Equal(t, "Song 2", (*songs)[1].Title, "expected second song to be Song 2")
 }
 
 func TestGetArtistSongs_WithoutSongs(t *testing.T) {
@@ -148,11 +142,9 @@ func TestGetArtistSongs_WithoutSongs(t *testing.T) {
 
 	repo := NewGormArtistRepository(db)
 
-	// Create test data
 	artistNoSongs := models.Artist{Name: "No Songs Artist"}
 	db.Create(&artistNoSongs)
 
-	// Test case: Artist has no songs
 	songs, err := repo.GetArtistSongs(artistNoSongs.ID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -169,7 +161,6 @@ func TestGetArtistSongs_InvalidArtistID(t *testing.T) {
 
 	repo := NewGormArtistRepository(db)
 
-	// Test case: Invalid artist ID
 	songs, err := repo.GetArtistSongs(999)
 	assert.Nil(t, songs, "expected no songs")
 	assert.NoError(t, err, "expected no error")

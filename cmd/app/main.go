@@ -8,6 +8,8 @@ import (
 	"chords_app/internal/web"
 	"chords_app/internal/web/handlers"
 	"log/slog"
+
+	"github.com/go-playground/validator/v10"
 )
 
 func main() {
@@ -26,11 +28,17 @@ func main() {
 	database.AutoMigrate(db)
 	slog.Info("Database initialized")
 
+	validate := validator.New()
+
 	userRepo := repositories.NewGormUserRepository(db)
 	userService := services.NewUserService(userRepo, &cfg.JWTConfig)
 	userHandler := handlers.NewUserHandler(userService, &cfg.Roles)
 
-	router := web.SetupRouter(userHandler)
+	artistRepo := repositories.NewGormArtistRepository(db)
+	artistService := services.NewArtistService(artistRepo)
+	artistHandler := handlers.NewArtistHandlers(artistService, validate)
+
+	router := web.SetupRouter(userHandler, artistHandler)
 
 	slog.Info("Starting HTTP server", "host", cfg.Server.Host, "port", cfg.Server.Port)
 	if err := router.Run(cfg.Server.Host + ":" + cfg.Server.Port); err != nil {
