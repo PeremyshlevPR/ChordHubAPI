@@ -10,7 +10,7 @@ type User struct {
 	Email         string
 	PasswordHash  string
 	Role          string
-	UploadedSongs []Song `gorm:"foreignKey:UploadedBy"`
+	UploadedSongs []Song `gorm:"foreignKey:UploadedBy;constraint:OnDelete:CASCADE;"`
 }
 
 type Artist struct {
@@ -18,7 +18,7 @@ type Artist struct {
 	Name        string
 	Description string
 	ImageUrl    string
-	Songs       []SongArtist
+	Songs       []SongArtist `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 type Song struct {
@@ -26,15 +26,15 @@ type Song struct {
 	Title       string
 	Description string
 	Content     string
-	Artists     []SongArtist
+	Artists     []SongArtist `gorm:"constraint:OnDelete:CASCADE;"`
 	UploadedBy  uint
 }
 
 type SongArtist struct {
 	gorm.Model
 	ArtistID   uint
-	Artist     Artist
+	Artist     Artist `gorm:"constraint:OnDelete:CASCADE;"`
 	SongID     uint
-	Song       Song
+	Song       Song `gorm:"constraint:OnDelete:CASCADE;"`
 	TitleOrder int
 }
