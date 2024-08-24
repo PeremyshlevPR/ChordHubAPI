@@ -4,37 +4,38 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
-	Env       string `yaml:"env"`
-	Server    Server `yaml:"server"`
-	DB        `yaml:"db"`
-	JWTConfig `yaml:"jwt"`
-	Roles     `yaml:"roles"`
+	Env       string    `yaml:"env" validate:"required"`
+	Server    Server    `yaml:"server" validate:"required"`
+	DB        DB        `yaml:"db" validate:"required"`
+	JWTConfig JWTConfig `yaml:"jwt" validate:"required"`
+	Roles     Roles     `yaml:"roles" validate:"required"`
 }
 
 type Server struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
+	Host string `yaml:"host" validate:"required"`
+	Port string `yaml:"port" validate:"required"`
 }
 
 type DB struct {
-	Path string `yaml:"path"`
+	Path string `yaml:"path" validate:"required"`
 }
 
 type JWTConfig struct {
-	AccessTokenExpTimeMin uint   `yaml:"access_token_exp_time_min"`
-	AccessTokenSecretKey  string `yaml:"access_token_secret_key"`
+	AccessTokenExpTimeMin uint   `yaml:"access_token_exp_time_min" validate:"required"`
+	AccessTokenSecretKey  string `yaml:"access_token_secret_key" validate:"required"`
 
-	RefreshTokenExpTimeDays uint   `yaml:"refresh_token_exp_time_days"`
-	RefreshTokenSecretKey   string `yaml:"refresh_token_secret_key"`
+	RefreshTokenExpTimeDays uint   `yaml:"refresh_token_exp_time_days" validate:"required"`
+	RefreshTokenSecretKey   string `yaml:"refresh_token_secret_key" validate:"required"`
 }
 
 type Roles struct {
-	Admin string `yaml:"admin"`
-	User  string `yaml:"user"`
+	Admin string `yaml:"admin" validate:"required"`
+	User  string `yaml:"user" validate:"required"`
 }
 
 func SetupConfig() (*Config, error) {
@@ -46,5 +47,15 @@ func SetupConfig() (*Config, error) {
 	}
 
 	err := cleanenv.ReadConfig(configPath, &config)
-	return &config, err
+	if err != nil {
+		return &config, err
+	}
+
+	validate := validator.New()
+	err = validate.Struct(config)
+	if err != nil {
+		return &config, fmt.Errorf("configuration validation failed: %w", err)
+	}
+
+	return &config, nil
 }

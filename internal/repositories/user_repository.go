@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"chords_app/internal/models"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -21,11 +22,13 @@ func NewGormUserRepository(db *gorm.DB) UserRepository {
 
 func (r *gormUserRepository) FindByEmail(email string) (*models.User, error) {
 	var user models.User
+	result := r.db.Where("email = ?", email).First(&user)
 
-	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
-		return nil, err
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, nil
 	}
-	return &user, nil
+
+	return &user, result.Error
 }
 
 func (r *gormUserRepository) Create(user *models.User) error {
