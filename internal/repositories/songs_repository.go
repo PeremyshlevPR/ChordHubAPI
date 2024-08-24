@@ -7,23 +7,34 @@ import (
 )
 
 type SongRepository interface {
-	CreateSong(song *models.Song, artistIds []uint) error
-	GetSong(songId uint) (*models.Song, error)
+	CreateSong(song *models.Song) error
+	GetSongById(songId uint) (*models.Song, error)
+	GetSongWithArtists(songId uint) (*models.Song, error)
 	UpdateSong(song *models.Song) error
 	DeleteSong(song *models.Song) error
 	AttachAuthor(songArtist *models.SongArtist) error
-	DeattachAuthor(artistId uint) error
+	DeattachAuthor(songArtist *models.SongArtist) error
 }
 
 type gormSongRepository struct {
 	db *gorm.DB
 }
 
+func NewGormSongRepository(db *gorm.DB) SongRepository {
+	return &gormSongRepository{db}
+}
+
 func (r *gormSongRepository) CreateSong(song *models.Song) error {
 	return r.db.Create(song).Error
 }
 
-func (r *gormSongRepository) GetSong(songId uint) (*models.Song, error) {
+func (r *gormSongRepository) GetSongById(songId uint) (*models.Song, error) {
+	var song models.Song
+	err := r.db.Where("id = ?", songId).First(&song).Error
+	return &song, err
+}
+
+func (r *gormSongRepository) GetSongWithArtists(songId uint) (*models.Song, error) {
 	var song models.Song
 
 	result := r.db.Model(&models.Song{}).

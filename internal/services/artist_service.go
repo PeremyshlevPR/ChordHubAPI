@@ -77,12 +77,7 @@ func (s *artistService) DeleteArtist(artistId uint) error {
 		return errors.New("artist not found")
 	}
 
-	err = s.repo.DeleteArtist(artist)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.DeleteArtist(artist)
 }
 
 func (s *artistService) GetArtistInformation(artistId uint) (*models.Artist, *[]models.Song, error) {
