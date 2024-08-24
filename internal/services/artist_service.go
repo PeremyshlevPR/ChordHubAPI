@@ -7,6 +7,9 @@ import (
 
 type ArtistService interface {
 	CreateArtist(name, description, imageUrl string) (*models.Artist, error)
+	UpdateArtist(artistId uint, name, description, imageUrl string) (*models.Artist, error)
+	DeleteArtist(artistId uint) error
+	GetArtistInformation(artistId uint) (*models.Artist, *[]models.Song, error)
 }
 
 type artistService struct {
@@ -33,6 +36,38 @@ func (s *artistService) CreateArtist(name, description, imageUrl string) (*model
 
 func (s *artistService) GetArtists() (*[]models.Artist, error) {
 	return s.repo.GetArtists()
+}
+
+func (s *artistService) UpdateArtist(artistId uint, name, description, imageUrl string) (*models.Artist, error) {
+	artist, err := s.repo.GetArtistById(artistId)
+	if err != nil {
+		return nil, err
+	}
+
+	artist.Name = name
+	artist.Description = description
+	artist.ImageUrl = imageUrl
+
+	err = s.repo.UpdateArtist(artist)
+	if err != nil {
+		return nil, err
+	}
+
+	return artist, nil
+}
+
+func (s *artistService) DeleteArtist(artistId uint) error {
+	artist, err := s.repo.GetArtistById(artistId)
+	if err != nil {
+		return err
+	}
+
+	err = s.repo.DeleteArtist(artist)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *artistService) GetArtistInformation(artistId uint) (*models.Artist, *[]models.Song, error) {

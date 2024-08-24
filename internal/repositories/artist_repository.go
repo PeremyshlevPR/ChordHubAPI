@@ -12,6 +12,8 @@ type ArtistRepository interface {
 	GetArtists() (*[]models.Artist, error)
 	GetArtistById(artistId uint) (*models.Artist, error)
 	GetArtistSongs(artistId uint) (*[]models.Song, error)
+	UpdateArtist(artist *models.Artist) error
+	DeleteArtist(artist *models.Artist) error
 }
 
 type gormArtistRepository struct {
@@ -44,6 +46,14 @@ func (r *gormArtistRepository) GetArtistById(artistId uint) (*models.Artist, err
 		return nil, nil
 	}
 	return &artist, result.Error
+}
+
+func (r *gormArtistRepository) UpdateArtist(artist *models.Artist) error {
+	return r.db.Save(artist).Error
+}
+
+func (r *gormArtistRepository) DeleteArtist(artist *models.Artist) error {
+	return r.db.Delete(artist).Error
 }
 
 func (r *gormArtistRepository) GetArtistSongs(artistId uint) (*[]models.Song, error) {
