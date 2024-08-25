@@ -72,8 +72,6 @@ func (h *ArtistHandler) GetArtistInformation(c *gin.Context) {
 }
 
 func (h *ArtistHandler) CreateArtist(c *gin.Context) {
-	// TODO: protect handler with auth middleware
-
 	var req struct {
 		Name        string `json:"name" validate:"required,min=2"`
 		Description string `json:"description"`
@@ -102,8 +100,6 @@ func (h *ArtistHandler) CreateArtist(c *gin.Context) {
 }
 
 func (h *ArtistHandler) UpdateArtist(c *gin.Context) {
-	// TODO: protect handler with auth middleware
-
 	artistId, err := parseUintParam(c, "id")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist ID"})
@@ -147,8 +143,6 @@ func (h *ArtistHandler) UpdateArtist(c *gin.Context) {
 }
 
 func (h *ArtistHandler) DeleteArtist(c *gin.Context) {
-	// TODO: protect handler with auth middleware
-
 	artistId, err := parseUintParam(c, "id")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid artist ID"})

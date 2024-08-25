@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"chords_app/internal/models"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -37,19 +38,19 @@ func (r *gormSongRepository) GetSongById(songId uint) (*models.Song, error) {
 func (r *gormSongRepository) GetSongWithArtists(songId uint) (*models.Song, error) {
 	var song models.Song
 
-	result := r.db.Model(&models.Song{}).
+	err := r.db.Model(&models.Song{}).
 		Joins("JOIN song_artists ON song_artists.song_id = songs.id").
 		Where("song_artists.song_id = ?", songId).
 		Preload("Artists", func(db *gorm.DB) *gorm.DB {
 			return db.Order("title_order")
 		}).
-		First(&song)
+		First(&song).Error
 
-	if result.Error != nil {
-		return nil, result.Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, errors.New("song not found")
 	}
 
-	return &song, nil
+	return &song, err
 }
 
 func (r *gormSongRepository) UpdateSong(song *models.Song) error {

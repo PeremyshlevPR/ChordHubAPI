@@ -14,6 +14,7 @@ const apiV1Prefix = "/api/v1"
 func SetupRouter(
 	userHandler *handlers.UserHandler,
 	artistHandler *handlers.ArtistHandler,
+	songHandler *handlers.SongHandler,
 	userService services.UserService,
 	rolesConfig *config.Roles,
 ) *gin.Engine {
@@ -25,9 +26,12 @@ func SetupRouter(
 	apiRouter.POST("/refresh", userHandler.Refresh)
 	apiRouter.GET("/artists", artistHandler.GetArtists)
 	apiRouter.GET("/artists/:id", artistHandler.GetArtistInformation)
+	apiRouter.GET("songs/:id", songHandler.GetSong)
 
 	authRequieredRouter := apiRouter.Group("/", middleware.AuthMiddleware(userService))
 	authRequieredRouter.GET("/users/me", userHandler.GetUserInfo)
+	authRequieredRouter.POST("/songs", songHandler.UploadSong)
+	authRequieredRouter.PUT("songs/:id", songHandler.UpdateSong)
 
 	adminOnlyRouter := authRequieredRouter.Group("/", middleware.VerifyRoleMiddleware(userService, rolesConfig.Admin))
 	adminOnlyRouter.POST("/artists", artistHandler.CreateArtist)

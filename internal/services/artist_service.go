@@ -7,12 +7,23 @@ import (
 	"errors"
 )
 
+type ArtistDTO struct {
+	ID   uint
+	Name string
+}
+
+type SongDTO struct {
+	ID      uint
+	Title   string
+	Artists []ArtistDTO
+}
+
 type ArtistService interface {
 	CreateArtist(name, description, imageUrl string) (*models.Artist, error)
 	UpdateArtist(artistId uint, name, description, imageUrl string) (*models.Artist, error)
 	DeleteArtist(artistId uint) error
 	GetArtists() (*[]models.Artist, error)
-	GetArtistInformation(artistId uint) (*models.Artist, *[]models.Song, error)
+	GetArtistInformation(artistId uint) (*models.Artist, *[]SongDTO, error)
 }
 
 type artistService struct {
@@ -80,7 +91,7 @@ func (s *artistService) DeleteArtist(artistId uint) error {
 	return s.repo.DeleteArtist(artist)
 }
 
-func (s *artistService) GetArtistInformation(artistId uint) (*models.Artist, *[]models.Song, error) {
+func (s *artistService) GetArtistInformation(artistId uint) (*models.Artist, *[]SongDTO, error) {
 	artist, err := s.repo.GetArtistById(artistId)
 	if err != nil {
 		return nil, nil, err
@@ -89,16 +100,32 @@ func (s *artistService) GetArtistInformation(artistId uint) (*models.Artist, *[]
 		return nil, nil, errors.New("artist not found")
 	}
 
-	var empty_songs *[]models.Song
+	var empty_songs *[]SongDTO
 
 	songs, err := s.repo.GetArtistSongs(artist.ID)
 	if err != nil {
 		return nil, empty_songs, err
 	}
 
-	if songs == nil {
-		songs = empty_songs
+	songDTOs := make([]SongDTO, 0, len(*songs))
+	for _, song := range *songs {
+		artists := make([]ArtistDTO, 0, len(song.Artists))
+
+		for _, songArtist := range song.Artists {
+			artist, err := s.repo.GetArtistById(songArtist.ArtistID)
+			if err != nil || artist == nil {
+				continue
+			}
+			artists = append(artists, ArtistDTO{artist.ID, artist.Name})
+		}
+
+		songDTO := SongDTO{
+			ID:      song.ID,
+			Title:   song.Title,
+			Artists: artists,
+		}
+		songDTOs = append(songDTOs, songDTO)
 	}
 
-	return artist, songs, nil
+	return artist, &songDTOs, nil
 }

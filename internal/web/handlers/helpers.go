@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"chords_app/internal/models"
 	"net/http"
 	"strconv"
 
@@ -29,4 +30,14 @@ func parseUintParam(c *gin.Context, param string) (uint, error) {
 		return 0, err
 	}
 	return uint(id), nil
+}
+
+func GetUserModel(c *gin.Context) (*models.User, bool) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "access token not passed ar invalid"})
+		return &models.User{}, exists
+	}
+	userModel := user.(*models.User)
+	return userModel, exists
 }

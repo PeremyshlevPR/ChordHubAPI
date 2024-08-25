@@ -38,7 +38,11 @@ func main() {
 	artistService := services.NewArtistService(artistRepo)
 	artistHandler := handlers.NewArtistHandlers(artistService, validate)
 
-	router := web.SetupRouter(userHandler, artistHandler, userService, &cfg.Roles)
+	songRepo := repositories.NewGormSongRepository(db)
+	songService := services.NewSongService(songRepo, artistRepo)
+	songHandler := handlers.NewSongHandlers(songService, &cfg.Roles, validate)
+
+	router := web.SetupRouter(userHandler, artistHandler, songHandler, userService, &cfg.Roles)
 
 	slog.Info("Starting HTTP server", "host", cfg.Server.Host, "port", cfg.Server.Port)
 	if err := router.Run(cfg.Server.Host + ":" + cfg.Server.Port); err != nil {
