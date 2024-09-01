@@ -12,12 +12,6 @@ type ArtistDTO struct {
 	Name string
 }
 
-type SongDTO struct {
-	ID      uint
-	Title   string
-	Artists []ArtistDTO
-}
-
 type ArtistService interface {
 	CreateArtist(name, description, imageUrl string) (*models.Artist, error)
 	UpdateArtist(artistId uint, name, description, imageUrl string) (*models.Artist, error)

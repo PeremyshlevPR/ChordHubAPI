@@ -19,43 +19,33 @@ func NewSongHandlers(service services.SongService, rolesConfig *config.Roles, va
 	return &SongHandler{service, rolesConfig, validate}
 }
 
-func (h *SongHandler) UploadSong(c *gin.Context) {
-	user, exists := GetUserModel(c)
-	if !exists {
-		return
-	}
+func (h *SongHandler) GetSongsListOrderedByTitle(c *gin.Context) {
+	const defaultLimit = 50
 
-	var req struct {
-		Title       string `json:"title" validate:"required"`
-		Description string `json:"description"`
-		Content     string `json:"content" validate:"required"`
-		ArtistIds   []uint `json:"artistIds" validate:"required,min=1"`
-	}
-	if !ValidateRequest(c, &req, h.validate) {
-		return
-	}
-
-	song, _, err := h.service.UploadSong(req.Title, req.Description, req.Content, user.ID, req.ArtistIds)
+	limit, err := parseUintQueryParam(c, "limit")
 	if err != nil {
-		var statusCode int
-		if err.Error() == "artist not found" {
-			statusCode = http.StatusNotFound
-		} else {
-			statusCode = http.StatusInternalServerError
-		}
-		c.JSON(statusCode, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid `limit` parameter. It should be non negative integer"})
+		return
+	}
+	if limit == 0 {
+		limit = defaultLimit
+	}
+
+	offset, err := parseUintQueryParam(c, "offset")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid `offset` parameter. It should be non negative integer"})
 		return
 	}
 
+	order_by := "title asc" // return songs in title ascending order
+	songs, err := h.service.GetSongs(limit, offset, order_by)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(
-		http.StatusCreated,
-		gin.H{
-			"id":          song.ID,
-			"title":       song.Title,
-			"description": song.Description,
-			"content":     song.Content,
-			"artistIds":   req.ArtistIds,
-		},
+		http.StatusOK,
+		gin.H{"songs": songs},
 	)
 }
 
@@ -92,6 +82,46 @@ func (h *SongHandler) GetSong(c *gin.Context) {
 			"content":     song.Content,
 			"uploadedBy":  song.UploadedBy,
 			"artistIds":   artistIds,
+		},
+	)
+}
+
+func (h *SongHandler) UploadSong(c *gin.Context) {
+	user, exists := GetUserModel(c)
+	if !exists {
+		return
+	}
+
+	var req struct {
+		Title       string `json:"title" validate:"required"`
+		Description string `json:"description"`
+		Content     string `json:"content" validate:"required"`
+		ArtistIds   []uint `json:"artistIds" validate:"required,min=1"`
+	}
+	if !ValidateRequest(c, &req, h.validate) {
+		return
+	}
+
+	song, _, err := h.service.UploadSong(req.Title, req.Description, req.Content, user.ID, req.ArtistIds)
+	if err != nil {
+		var statusCode int
+		if err.Error() == "artist not found" {
+			statusCode = http.StatusNotFound
+		} else {
+			statusCode = http.StatusInternalServerError
+		}
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(
+		http.StatusCreated,
+		gin.H{
+			"id":          song.ID,
+			"title":       song.Title,
+			"description": song.Description,
+			"content":     song.Content,
+			"artistIds":   req.ArtistIds,
 		},
 	)
 }

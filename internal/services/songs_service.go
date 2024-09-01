@@ -7,10 +7,17 @@ import (
 )
 
 type SongService interface {
+	GetSongs(limit, offset uint, order_by string) (*[]SongDTO, error)
 	UploadSong(title, description, content string, uploadedBy uint, artistIds []uint) (*models.Song, *[]models.SongArtist, error)
 	UpdateSong(songId uint, title, description, content string, artistIds []uint) (*models.Song, *[]models.SongArtist, error)
 	GetSongWithArtists(songId uint) (*models.Song, error)
 	DeleteSong(songId uint) error
+}
+
+type SongDTO struct {
+	ID      uint
+	Title   string
+	Artists []ArtistDTO
 }
 
 type songService struct {
@@ -20,6 +27,35 @@ type songService struct {
 
 func NewSongService(repo repositories.SongRepository, artistRepo repositories.ArtistRepository) SongService {
 	return &songService{repo, artistRepo}
+}
+
+func (s *songService) GetSongs(limit, offset uint, order_by string) (*[]SongDTO, error) {
+	songs, err := s.repo.GetSongs(limit, offset, order_by)
+	if err != nil {
+		return nil, err
+	}
+
+	songDTOs := make([]SongDTO, 0, len(*songs))
+	for _, song := range *songs {
+		artists := make([]ArtistDTO, 0, len(song.Artists))
+
+		for _, songArtist := range song.Artists {
+			artist, err := s.artistRepo.GetArtistById(songArtist.ArtistID)
+			if err != nil || artist == nil {
+				continue
+			}
+			artists = append(artists, ArtistDTO{artist.ID, artist.Name})
+		}
+
+		songDTO := SongDTO{
+			ID:      song.ID,
+			Title:   song.Title,
+			Artists: artists,
+		}
+		songDTOs = append(songDTOs, songDTO)
+	}
+
+	return &songDTOs, nil
 }
 
 func (s *songService) UploadSong(title, description, content string, uploadedBy uint, artistIds []uint) (*models.Song, *[]models.SongArtist, error) {

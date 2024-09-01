@@ -26,7 +26,8 @@ func SetupRouter(
 	apiRouter.POST("/refresh", userHandler.Refresh)
 	apiRouter.GET("/artists", artistHandler.GetArtists)
 	apiRouter.GET("/artists/:id", artistHandler.GetArtistInformation)
-	apiRouter.GET("songs/:id", songHandler.GetSong)
+	apiRouter.GET("/songs", songHandler.GetSongsListOrderedByTitle)
+	apiRouter.GET("/songs/:id", songHandler.GetSong)
 
 	authRequieredRouter := apiRouter.Group("/", middleware.AuthMiddleware(userService))
 	authRequieredRouter.GET("/users/me", userHandler.GetUserInfo)

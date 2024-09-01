@@ -8,6 +8,7 @@ import (
 )
 
 type SongRepository interface {
+	GetSongs(limit, offset uint, order_by string) (*[]models.Song, error)
 	CreateSong(song *models.Song) error
 	GetSongById(songId uint) (*models.Song, error)
 	GetSongWithArtists(songId uint) (*models.Song, error)
@@ -23,6 +24,19 @@ type gormSongRepository struct {
 
 func NewGormSongRepository(db *gorm.DB) SongRepository {
 	return &gormSongRepository{db}
+}
+
+func (r *gormSongRepository) GetSongs(limit, offset uint, order_by string) (*[]models.Song, error) {
+	var songs []models.Song
+	err := r.db.
+		Order(order_by).
+		Limit(int(limit)).
+		Offset(int(offset)).
+		Preload("Artists", func(db *gorm.DB) *gorm.DB {
+			return db.Order("title_order")
+		}).
+		Find(&songs).Error
+	return &songs, err
 }
 
 func (r *gormSongRepository) CreateSong(song *models.Song) error {
