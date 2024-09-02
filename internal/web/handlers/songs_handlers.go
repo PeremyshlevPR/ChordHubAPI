@@ -19,7 +19,7 @@ func NewSongHandlers(service services.SongService, rolesConfig *config.Roles, va
 	return &SongHandler{service, rolesConfig, validate}
 }
 
-func (h *SongHandler) GetSongsListOrderedByTitle(c *gin.Context) {
+func (h *SongHandler) GetMostPopularSongs(c *gin.Context) {
 	limit, err := parseUintQueryParam(c, "limit", 50)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid `limit` parameter. It should be non negative integer"})
@@ -32,8 +32,12 @@ func (h *SongHandler) GetSongsListOrderedByTitle(c *gin.Context) {
 		return
 	}
 
-	order_by := "title asc" // return songs in title ascending order
-	songs, err := h.service.GetSongs(limit, offset, order_by)
+	period := c.Query("period")
+	if period == "" {
+		period = "allTime"
+	}
+
+	songs, err := h.service.GetMostPopularSongs(period, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

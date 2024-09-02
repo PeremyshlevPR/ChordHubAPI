@@ -38,3 +38,8 @@ type SongArtist struct {
 	Song       Song `gorm:"constraint:OnDelete:CASCADE;"`
 	TitleOrder int
 }
+
+type SongRequest struct {
+	gorm.Model
+	SongID uint
+}

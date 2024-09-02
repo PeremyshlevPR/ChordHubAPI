@@ -7,7 +7,7 @@ import (
 )
 
 type SongService interface {
-	GetSongs(limit, offset uint, order_by string) (*[]SongDTO, error)
+	GetMostPopularSongs(period string, limit, offset uint) (*[]SongDTOWithViews, error)
 	UploadSong(title, description, content string, uploadedBy uint, artistIds []uint) (*models.Song, *[]models.SongArtist, error)
 	UpdateSong(songId uint, title, description, content string, artistIds []uint) (*models.Song, *[]models.SongArtist, error)
 	GetSongWithArtists(songId uint) (*models.Song, error)
@@ -20,6 +20,11 @@ type SongDTO struct {
 	Artists []ArtistDTO
 }
 
+type SongDTOWithViews struct {
+	SongDTO
+	Views uint
+}
+
 type songService struct {
 	repo       repositories.SongRepository
 	artistRepo repositories.ArtistRepository
@@ -29,13 +34,33 @@ func NewSongService(repo repositories.SongRepository, artistRepo repositories.Ar
 	return &songService{repo, artistRepo}
 }
 
-func (s *songService) GetSongs(limit, offset uint, order_by string) (*[]SongDTO, error) {
-	songs, err := s.repo.GetSongs(limit, offset, order_by)
+func (s *songService) GetMostPopularSongs(period string, limit, offset uint) (*[]SongDTOWithViews, error) {
+	var days uint
+
+	switch period {
+	case "day":
+		days = 1
+	case "week":
+		days = 7
+	case "month":
+		days = 30
+	case "year":
+		days = 365
+	case "allTime":
+		days = 0
+	default:
+		return nil, errors.New("invalid period, should by one of [day, week, month, year, allTime]")
+	}
+
+	songs, err := s.repo.GetPopularSongsForPeriod(days, limit, offset)
 	if err != nil {
 		return nil, err
 	}
+	return s.songstoSongDTO(songs)
+}
 
-	songDTOs := make([]SongDTO, 0, len(*songs))
+func (s *songService) songstoSongDTO(songs *[]repositories.SongWithViews) (*[]SongDTOWithViews, error) {
+	songDTOs := make([]SongDTOWithViews, 0, len(*songs))
 	for _, song := range *songs {
 		artists := make([]ArtistDTO, 0, len(song.Artists))
 
@@ -52,7 +77,11 @@ func (s *songService) GetSongs(limit, offset uint, order_by string) (*[]SongDTO,
 			Title:   song.Title,
 			Artists: artists,
 		}
-		songDTOs = append(songDTOs, songDTO)
+		songDTOWithViews := SongDTOWithViews{
+			songDTO,
+			song.ViewCount,
+		}
+		songDTOs = append(songDTOs, songDTOWithViews)
 	}
 
 	return &songDTOs, nil
@@ -93,6 +122,9 @@ func (s *songService) UploadSong(title, description, content string, uploadedBy 
 }
 
 func (s *songService) GetSongWithArtists(songId uint) (*models.Song, error) {
+	if err := s.repo.AddSongRequest(songId); err != nil {
+		return nil, err
+	}
 	return s.repo.GetSongWithArtists(songId)
 }
 
