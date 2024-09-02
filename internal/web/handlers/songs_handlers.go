@@ -20,18 +20,13 @@ func NewSongHandlers(service services.SongService, rolesConfig *config.Roles, va
 }
 
 func (h *SongHandler) GetSongsListOrderedByTitle(c *gin.Context) {
-	const defaultLimit = 50
-
-	limit, err := parseUintQueryParam(c, "limit")
+	limit, err := parseUintQueryParam(c, "limit", 50)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid `limit` parameter. It should be non negative integer"})
 		return
 	}
-	if limit == 0 {
-		limit = defaultLimit
-	}
 
-	offset, err := parseUintQueryParam(c, "offset")
+	offset, err := parseUintQueryParam(c, "offset", 0)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid `offset` parameter. It should be non negative integer"})
 		return

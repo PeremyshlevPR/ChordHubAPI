@@ -32,13 +32,17 @@ func parseUintParam(c *gin.Context, param string) (uint, error) {
 	return uint(id), nil
 }
 
-func parseUintQueryParam(c *gin.Context, param string) (uint, error) {
-	idStr := c.Query(param)
-	id, err := strconv.ParseUint(idStr, 10, 32)
+func parseUintQueryParam(c *gin.Context, param string, defaultValue uint) (uint, error) {
+	ParamStr := c.Query(param)
+	if ParamStr == "" {
+		return defaultValue, nil
+	}
+
+	value, err := strconv.ParseUint(ParamStr, 10, 32)
 	if err != nil {
 		return 0, err
 	}
-	return uint(id), nil
+	return uint(value), nil
 }
 
 func GetUserModel(c *gin.Context) (*models.User, bool) {
