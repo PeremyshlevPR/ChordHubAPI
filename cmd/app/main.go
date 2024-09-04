@@ -1,6 +1,7 @@
 package main
 
 import (
+	"chords_app/internal/adapters/opensearch"
 	"chords_app/internal/config"
 	"chords_app/internal/database"
 	"chords_app/internal/repositories"
@@ -34,8 +35,14 @@ func main() {
 	userService := services.NewUserService(userRepo, &cfg.JWTConfig)
 	userHandler := handlers.NewUserHandler(userService, &cfg.Roles)
 
+	opensearchClient, err := opensearch.CreateOpenSearchClient(&cfg.Opensearch)
+	if err != nil {
+		slog.Error("Failed to initialize opensearch client", slog.String("error", err.Error()))
+		return
+	}
+	opensrearchAdapter := opensearch.NewOpenSearchAdapter(opensearchClient, cfg.Opensearch.IndexName)
 	artistRepo := repositories.NewGormArtistRepository(db)
-	artistService := services.NewArtistService(artistRepo)
+	artistService := services.NewArtistService(artistRepo, opensrearchAdapter, db)
 	artistHandler := handlers.NewArtistHandlers(artistService, validate)
 
 	songRepo := repositories.NewGormSongRepository(db)

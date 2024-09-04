@@ -1,10 +1,13 @@
 package services
 
 import (
+	"chords_app/internal/adapters/opensearch"
 	"chords_app/internal/models"
 	"chords_app/internal/repositories"
 
 	"errors"
+
+	"gorm.io/gorm"
 )
 
 type ArtistDTO struct {
@@ -21,14 +24,18 @@ type ArtistService interface {
 }
 
 type artistService struct {
-	repo repositories.ArtistRepository
+	repo      repositories.ArtistRepository
+	osAdapter *opensearch.OpenSearchAdapter
+	db        *gorm.DB
 }
 
-func NewArtistService(repo repositories.ArtistRepository) ArtistService {
-	return &artistService{repo}
+func NewArtistService(repo repositories.ArtistRepository, osAdapter *opensearch.OpenSearchAdapter, db *gorm.DB) ArtistService {
+	return &artistService{repo, osAdapter, db}
 }
 
 func (s *artistService) CreateArtist(name, description, imageUrl string) (*models.Artist, error) {
+	tx := s.db.Begin()
+
 	artist := &models.Artist{
 		Name:        name,
 		Description: description,
@@ -37,8 +44,15 @@ func (s *artistService) CreateArtist(name, description, imageUrl string) (*model
 
 	err := s.repo.CreateArtist(artist)
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
+	err = s.osAdapter.IndexArtist(artist)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	tx.Commit()
 	return artist, nil
 }
 

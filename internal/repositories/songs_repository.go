@@ -16,29 +16,27 @@ type SongWithViews struct {
 }
 
 type SongRepository interface {
-	GetPopularSongsForPeriod(periodDays, limit, offset uint) (*[]SongWithViews, error)
-	CreateSong(song *models.Song) error
-	GetSongById(songId uint) (*models.Song, error)
-	GetSongWithArtists(songId uint) (*models.Song, error)
-	UpdateSong(song *models.Song) error
-	DeleteSong(song *models.Song) error
-	AttachAuthor(songArtist *models.SongArtist) error
-	DeattachAuthor(songArtist *models.SongArtist) error
-	AddSongRequest(songId uint) error
+	GetPopularSongsForPeriod(db *gorm.DB, periodDays, limit, offset uint) (*[]SongWithViews, error)
+	CreateSong(db *gorm.DB, song *models.Song) error
+	GetSongById(db *gorm.DB, songId uint) (*models.Song, error)
+	GetSongWithArtists(db *gorm.DB, songId uint) (*models.Song, error)
+	UpdateSong(db *gorm.DB, song *models.Song) error
+	DeleteSong(db *gorm.DB, song *models.Song) error
+	AttachAuthor(db *gorm.DB, songArtist *models.SongArtist) error
+	DeattachAuthor(db *gorm.DB, songArtist *models.SongArtist) error
+	AddSongRequest(db *gorm.DB, songId uint) error
 }
 
-type gormSongRepository struct {
-	db *gorm.DB
+type gormSongRepository struct{}
+
+func NewGormSongRepository() SongRepository {
+	return &gormSongRepository{}
 }
 
-func NewGormSongRepository(db *gorm.DB) SongRepository {
-	return &gormSongRepository{db}
-}
-
-func (r *gormSongRepository) GetPopularSongsForPeriod(periodDays, limit, offset uint) (*[]SongWithViews, error) {
+func (r *gormSongRepository) GetPopularSongsForPeriod(db *gorm.DB, periodDays, limit, offset uint) (*[]SongWithViews, error) {
 	var result []SongWithViews
 
-	subquery := r.db.
+	subquery := db.
 		Select("song_id, COUNT(*) as view_count").
 		Table("song_requests").
 		Group("song_id")
@@ -47,7 +45,7 @@ func (r *gormSongRepository) GetPopularSongsForPeriod(periodDays, limit, offset 
 		subquery = subquery.Where("requested_at >= ?", time.Now().AddDate(0, 0, -int(periodDays)))
 	}
 
-	err := r.db.
+	err := db.
 		Select("songs.*, COALESCE(subquery.view_count, 0) as view_count").
 		Table("songs").
 		Joins("LEFT JOIN (?) as subquery ON songs.id = subquery.song_id", subquery).
@@ -62,20 +60,20 @@ func (r *gormSongRepository) GetPopularSongsForPeriod(periodDays, limit, offset 
 	return &result, err
 }
 
-func (r *gormSongRepository) CreateSong(song *models.Song) error {
-	return r.db.Create(song).Error
+func (r *gormSongRepository) CreateSong(db *gorm.DB, song *models.Song) error {
+	return db.Create(song).Error
 }
 
-func (r *gormSongRepository) GetSongById(songId uint) (*models.Song, error) {
+func (r *gormSongRepository) GetSongById(db *gorm.DB, songId uint) (*models.Song, error) {
 	var song models.Song
-	err := r.db.Where("id = ?", songId).First(&song).Error
+	err := db.Where("id = ?", songId).First(&song).Error
 	return &song, err
 }
 
-func (r *gormSongRepository) GetSongWithArtists(songId uint) (*models.Song, error) {
+func (r *gormSongRepository) GetSongWithArtists(db *gorm.DB, songId uint) (*models.Song, error) {
 	var song models.Song
 
-	err := r.db.Model(&models.Song{}).
+	err := db.Model(&models.Song{}).
 		Joins("JOIN song_artists ON song_artists.song_id = songs.id").
 		Where("song_artists.song_id = ?", songId).
 		Preload("Artists", func(db *gorm.DB) *gorm.DB {
@@ -90,25 +88,25 @@ func (r *gormSongRepository) GetSongWithArtists(songId uint) (*models.Song, erro
 	return &song, err
 }
 
-func (r *gormSongRepository) UpdateSong(song *models.Song) error {
-	return r.db.Save(song).Error
+func (r *gormSongRepository) UpdateSong(db *gorm.DB, song *models.Song) error {
+	return db.Save(song).Error
 }
 
-func (r *gormSongRepository) DeleteSong(song *models.Song) error {
-	return r.db.Delete(song).Error
+func (r *gormSongRepository) DeleteSong(db *gorm.DB, song *models.Song) error {
+	return db.Delete(song).Error
 }
 
-func (r *gormSongRepository) AttachAuthor(songArtist *models.SongArtist) error {
-	return r.db.Create(songArtist).Error
+func (r *gormSongRepository) AttachAuthor(db *gorm.DB, songArtist *models.SongArtist) error {
+	return db.Create(songArtist).Error
 }
 
-func (r *gormSongRepository) DeattachAuthor(songArtist *models.SongArtist) error {
-	return r.db.Delete(songArtist).Error
+func (r *gormSongRepository) DeattachAuthor(db *gorm.DB, songArtist *models.SongArtist) error {
+	return db.Delete(songArtist).Error
 }
 
-func (r *gormSongRepository) AddSongRequest(songId uint) error {
+func (r *gormSongRepository) AddSongRequest(db *gorm.DB, songId uint) error {
 	songRequest := models.SongRequest{
 		SongID: songId,
 	}
-	return r.db.Create(&songRequest).Error
+	return db.Create(&songRequest).Error
 }

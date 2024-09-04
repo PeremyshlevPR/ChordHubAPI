@@ -9,11 +9,12 @@ import (
 )
 
 type Config struct {
-	Env       string    `yaml:"env" validate:"required"`
-	Server    Server    `yaml:"server" validate:"required"`
-	DB        DB        `yaml:"db" validate:"required"`
-	JWTConfig JWTConfig `yaml:"jwt" validate:"required"`
-	Roles     Roles     `yaml:"roles" validate:"required"`
+	Env        string     `yaml:"env" validate:"required"`
+	Server     Server     `yaml:"server" validate:"required"`
+	DB         DB         `yaml:"db" validate:"required"`
+	JWTConfig  JWTConfig  `yaml:"jwt" validate:"required"`
+	Roles      Roles      `yaml:"roles" validate:"required"`
+	Opensearch Opensearch `yaml:"opensearch" validate:"required"`
 }
 
 type Server struct {
@@ -36,6 +37,13 @@ type JWTConfig struct {
 type Roles struct {
 	Admin string `yaml:"admin" validate:"required"`
 	User  string `yaml:"user" validate:"required"`
+}
+
+type Opensearch struct {
+	Addresses []string `yaml:"addresses" validate:"required"`
+	Username  string   `yaml:"username"`
+	Password  string   `yaml:"password"`
+	IndexName string   `yaml:"index_name"`
 }
 
 func SetupConfig() (*Config, error) {

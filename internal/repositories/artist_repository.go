@@ -8,6 +8,7 @@ import (
 )
 
 type ArtistRepository interface {
+	BeginTransaction() *gorm.DB
 	CreateArtist(artist *models.Artist) error
 	GetArtists() (*[]models.Artist, error)
 	GetArtistById(artistId uint) (*models.Artist, error)
@@ -22,6 +23,10 @@ type gormArtistRepository struct {
 
 func NewGormArtistRepository(db *gorm.DB) ArtistRepository {
 	return &gormArtistRepository{db: db}
+}
+
+func (r *gormArtistRepository) BeginTransaction() *gorm.DB {
+	return r.db.Begin()
 }
 
 func (r *gormArtistRepository) CreateArtist(artist *models.Artist) error {
